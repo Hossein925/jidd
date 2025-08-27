@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { ExamTemplate } from '../types';
 import ExamBuilder from './ExamBuilder';
@@ -19,7 +20,8 @@ const ExamManager: React.FC<ExamManagerProps> = ({ templates, onAddOrUpdate, onD
         setEditingTemplate({
             id: Date.now().toString(),
             name: '',
-            questions: []
+            questions: [],
+            month: 'عمومی',
         });
     };
 
@@ -70,6 +72,7 @@ const ExamManager: React.FC<ExamManagerProps> = ({ templates, onAddOrUpdate, onD
                         <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-300">
                         <tr>
                             <th scope="col" className="px-6 py-3">نام آزمون</th>
+                            <th scope="col" className="px-6 py-3 text-center">ماه</th>
                             <th scope="col" className="px-6 py-3 text-center">تعداد سوالات</th>
                             <th scope="col" className="px-6 py-3 text-center">
                             <span className="sr-only">اقدامات</span>
@@ -81,6 +84,9 @@ const ExamManager: React.FC<ExamManagerProps> = ({ templates, onAddOrUpdate, onD
                             <tr key={template.id} className="group border-b dark:border-slate-700 odd:bg-white odd:dark:bg-slate-800 even:bg-slate-50 even:dark:bg-slate-700/50">
                             <td scope="row" className="px-6 py-4 font-medium text-slate-900 whitespace-nowrap dark:text-white">
                                 {template.name}
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                                {template.month || 'عمومی'}
                             </td>
                             <td className="px-6 py-4 text-center">
                                 {template.questions.length}

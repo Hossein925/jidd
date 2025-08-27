@@ -76,6 +76,7 @@ export interface ExamTemplate {
   id: string;
   name: string;
   questions: Question[];
+  month?: string; // Month for the exam, or 'عمومی' for all months
 }
 
 export interface ExamAnswer {
@@ -159,6 +160,25 @@ export interface AdminMessage {
   }
 }
 
+// --- Needs Assessment Types ---
+export interface NeedsAssessmentResponse {
+  staffId: string;
+  staffName: string;
+  response: string;
+}
+
+export interface NeedsAssessmentTopic {
+  id: string;
+  title: string;
+  responses: NeedsAssessmentResponse[];
+}
+
+export interface MonthlyNeedsAssessment {
+  month: string;
+  topics: NeedsAssessmentTopic[];
+}
+
+
 export interface Hospital {
   id: string;
   name: string;
@@ -174,6 +194,7 @@ export interface Hospital {
   accreditationMaterials?: TrainingMaterial[];
   newsBanners?: NewsBanner[];
   adminMessages?: AdminMessage[];
+  needsAssessments?: MonthlyNeedsAssessment[];
 }
 
 export enum AppScreen {
@@ -195,6 +216,7 @@ export enum View {
   PatientPortal,
   HospitalCommunication,
   AdminCommunication,
+  NeedsAssessmentManager,
 }
 
 export enum UserRole {

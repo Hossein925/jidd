@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { ExamTemplate, Question, QuestionType } from '../types';
 import { PlusIcon } from './icons/PlusIcon';
@@ -10,8 +11,16 @@ interface ExamBuilderProps {
   onCancel: () => void;
 }
 
+const PERSIAN_MONTHS = [
+  "فروردین", "اردیبهشت", "خرداد",
+  "تیر", "مرداد", "شهریور",
+  "مهر", "آبان", "آذر",
+  "دی", "بهمن", "اسفند"
+];
+
 const ExamBuilder: React.FC<ExamBuilderProps> = ({ template, onSave, onCancel }) => {
   const [name, setName] = useState(template.name || '');
+  const [month, setMonth] = useState(template.month || 'عمومی');
   const [questions, setQuestions] = useState<Question[]>(
     () => JSON.parse(JSON.stringify(template.questions || [])) // Deep copy
   );
@@ -84,7 +93,7 @@ const ExamBuilder: React.FC<ExamBuilderProps> = ({ template, onSave, onCancel })
             }
         }
     }
-    onSave({ ...template, name, questions });
+    onSave({ ...template, name, month, questions });
     alert('آزمون با موفقیت ذخیره شد.');
   }
 
@@ -179,19 +188,36 @@ const ExamBuilder: React.FC<ExamBuilderProps> = ({ template, onSave, onCancel })
         </div>
       </div>
 
-      <div className="mb-6">
-          <label htmlFor="exam-name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              نام آزمون
-          </label>
-          <input
-            id="exam-name"
-            type="text"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            placeholder="مثال: آزمون ایمنی بیمار"
-            className="w-full px-3 py-2 border border-slate-300 rounded-md dark:bg-slate-700 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div>
+              <label htmlFor="exam-name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  نام آزمون
+              </label>
+              <input
+                id="exam-name"
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="مثال: آزمون ایمنی بیمار"
+                className="w-full px-3 py-2 border border-slate-300 rounded-md dark:bg-slate-700 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+          </div>
+          <div>
+             <label htmlFor="exam-month" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  ماه برگزاری
+              </label>
+              <select
+                id="exam-month"
+                value={month}
+                onChange={e => setMonth(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-md dark:bg-slate-700 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                  <option value="عمومی">عمومی (همه ماه‌ها)</option>
+                  {PERSIAN_MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+          </div>
       </div>
+
 
       <div className="space-y-6">
         {questions.map(q => renderQuestionForm(q))}

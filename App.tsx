@@ -1,8 +1,10 @@
 
 
+
 import React, { useState, useEffect } from 'react';
 import useLocalStorage from './hooks/useLocalStorage';
-import { Department, StaffMember, View, SkillCategory, Assessment, Hospital, AppScreen, NamedChecklistTemplate, ExamTemplate, ExamSubmission, LoggedInUser, UserRole, TrainingMaterial, MonthlyTraining, NewsBanner, MonthlyWorkLog, Patient, ChatMessage, AdminMessage } from './types';
+// FIX: Import NeedsAssessment related types
+import { Department, StaffMember, View, SkillCategory, Assessment, Hospital, AppScreen, NamedChecklistTemplate, ExamTemplate, ExamSubmission, LoggedInUser, UserRole, TrainingMaterial, MonthlyTraining, NewsBanner, MonthlyWorkLog, Patient, ChatMessage, AdminMessage, NeedsAssessmentTopic, MonthlyNeedsAssessment } from './types';
 import WelcomeScreen from './components/WelcomeScreen';
 import HospitalList from './components/HospitalList';
 import DepartmentList from './components/DepartmentList';
@@ -25,6 +27,8 @@ import { BackIcon } from './components/icons/BackIcon';
 import * as db from './services/db';
 import AdminCommunicationView from './components/AdminCommunicationView';
 import HospitalCommunicationView from './components/HospitalCommunicationView';
+// FIX: Import NeedsAssessmentManager component
+import NeedsAssessmentManager from './components/NeedsAssessmentManager';
 
 const PERSIAN_MONTHS = [
   "فروردین", "اردیبهشت", "خرداد",
@@ -340,6 +344,8 @@ const App: React.FC = () => {
       case View.NewsBannerManager:
       case View.PatientEducationManager:
       case View.HospitalCommunication:
+// FIX: Add NeedsAssessmentManager to back navigation logic
+      case View.NeedsAssessmentManager:
         setSelectedDepartmentId(null);
         setCurrentView(View.DepartmentList);
         break;
@@ -369,6 +375,8 @@ const App: React.FC = () => {
       trainingMaterials: [],
       accreditationMaterials: [],
       newsBanners: [],
+// FIX: Initialize needsAssessments property for new hospitals
+      needsAssessments: [],
     };
     setHospitals([...hospitals, newHospital]);
   };
@@ -1078,6 +1086,34 @@ const App: React.FC = () => {
         }));
     };
     
+// FIX: Add handler for updating needs assessment topics
+  const handleUpdateNeedsAssessmentTopics = (month: string, topics: NeedsAssessmentTopic[]) => {
+    setHospitals(hospitals.map(h => {
+      if (h.id === selectedHospitalId) {
+        const needsAssessments = h.needsAssessments ? [...h.needsAssessments] : [];
+        const monthIndex = needsAssessments.findIndex(na => na.month === month);
+
+        if (topics.length > 0) {
+          if (monthIndex > -1) {
+            // Update existing month
+            needsAssessments[monthIndex].topics = topics;
+          } else {
+            // Add new month entry
+            needsAssessments.push({ month, topics });
+          }
+        } else {
+          // If topics are empty, remove the month entry if it exists
+          if (monthIndex > -1) {
+            needsAssessments.splice(monthIndex, 1);
+          }
+        }
+        
+        return { ...h, needsAssessments: needsAssessments.length > 0 ? needsAssessments : [] };
+      }
+      return h;
+    }));
+  };
+
   // --- Communication Handlers ---
   const handleSendMessage = (hospitalId: string, content: MessageContent, sender: 'hospital' | 'admin') => {
     const newMessage: AdminMessage = {
@@ -1174,7 +1210,8 @@ const App: React.FC = () => {
     if (department && hospital && (currentView === View.DepartmentView || currentView === View.StaffMemberView || currentView === View.PatientEducationManager)) {
         return { scope: 'department', name: department.name };
     }
-    if (hospital && (currentView === View.DepartmentList || currentView === View.ChecklistManager || currentView === View.ExamManager || currentView === View.TrainingManager || currentView === View.AccreditationManager || currentView === View.NewsBannerManager || currentView === View.HospitalCommunication)) {
+// FIX: Add NeedsAssessmentManager to getScope logic for correct save/load buttons
+    if (hospital && (currentView === View.DepartmentList || currentView === View.ChecklistManager || currentView === View.ExamManager || currentView === View.TrainingManager || currentView === View.AccreditationManager || currentView === View.NewsBannerManager || currentView === View.HospitalCommunication || currentView === View.NeedsAssessmentManager)) {
         return { scope: 'hospital', name: hospital.name };
     }
     return { scope: 'all' };
@@ -1306,6 +1343,9 @@ const App: React.FC = () => {
                     return <AccreditationManager materials={hospital.accreditationMaterials || []} onAddMaterial={handleAddAccreditationMaterial} onDeleteMaterial={handleDeleteAccreditationMaterial} onUpdateMaterialDescription={handleUpdateAccreditationMaterialDescription} onBack={handleBack} />
                 case View.NewsBannerManager:
                     return <NewsBannerManager banners={hospital.newsBanners || []} onAddBanner={handleAddNewsBanner} onUpdateBanner={handleUpdateNewsBanner} onDeleteBanner={handleDeleteNewsBanner} onBack={handleBack} />;
+// FIX: Add case to render NeedsAssessmentManager
+                case View.NeedsAssessmentManager:
+                    return <NeedsAssessmentManager hospital={hospital} onUpdateTopics={handleUpdateNeedsAssessmentTopics} onBack={handleBack} />;
                 case View.PatientEducationManager:
                      if (!department) return <p>Selected department not found.</p>;
                      return <PatientEducationManager 
@@ -1332,6 +1372,8 @@ const App: React.FC = () => {
                     onBack={() => {}} // Supervisor in DepartmentList for their hospital doesn't go back further
                     onManageAccreditation={() => setCurrentView(View.AccreditationManager)}
                     onManageNewsBanners={() => setCurrentView(View.NewsBannerManager)}
+// FIX: Add missing onManageNeedsAssessment prop
+                    onManageNeedsAssessment={() => setCurrentView(View.NeedsAssessmentManager)}
                     onResetHospital={handleResetHospital}
                     onContactAdmin={() => setCurrentView(View.HospitalCommunication)}
                     userRole={loggedInUser.role}
@@ -1370,6 +1412,9 @@ const App: React.FC = () => {
         return <AccreditationManager materials={hospital.accreditationMaterials || []} onAddMaterial={handleAddAccreditationMaterial} onDeleteMaterial={handleDeleteAccreditationMaterial} onUpdateMaterialDescription={handleUpdateAccreditationMaterialDescription} onBack={handleBack} />
       case View.NewsBannerManager:
         return <NewsBannerManager banners={hospital.newsBanners || []} onAddBanner={handleAddNewsBanner} onUpdateBanner={handleUpdateNewsBanner} onDeleteBanner={handleDeleteNewsBanner} onBack={handleBack} />;
+// FIX: Add case to render NeedsAssessmentManager for Admin role
+      case View.NeedsAssessmentManager:
+        return <NeedsAssessmentManager hospital={hospital} onUpdateTopics={handleUpdateNeedsAssessmentTopics} onBack={handleBack} />;
       case View.PatientEducationManager:
         if (!department) return <p>Selected department not found.</p>;
         return <PatientEducationManager 
@@ -1396,6 +1441,8 @@ const App: React.FC = () => {
           onBack={handleBack}
           onManageAccreditation={() => setCurrentView(View.AccreditationManager)}
           onManageNewsBanners={() => setCurrentView(View.NewsBannerManager)}
+// FIX: Add missing onManageNeedsAssessment prop
+          onManageNeedsAssessment={() => setCurrentView(View.NeedsAssessmentManager)}
           onResetHospital={handleResetHospital}
           onContactAdmin={() => setCurrentView(View.HospitalCommunication)}
           userRole={loggedInUser?.role ?? UserRole.Admin}
