@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState, useEffect } from 'react';
 import useLocalStorage from './hooks/useLocalStorage';
 // FIX: Import NeedsAssessment related types
@@ -1114,6 +1115,49 @@ const App: React.FC = () => {
     }));
   };
 
+  const handleSubmitNeedsAssessmentResponse = (departmentId: string, staffId: string, month: string, responses: Map<string, string>) => {
+    setHospitals(hospitals.map(h => {
+        if (h.id === selectedHospitalId) {
+            const staffMember = findStaffMember(findDepartment(h, departmentId), staffId);
+            if (!staffMember) return h;
+
+            const updatedNeedsAssessments = (h.needsAssessments || []).map(monthlyNA => {
+                if (monthlyNA.month === month) {
+                    const updatedTopics = monthlyNA.topics.map(topic => {
+                        const responseText = responses.get(topic.id);
+                        if (responseText === undefined) return topic; // No change for this topic
+
+                        const existingResponseIndex = topic.responses.findIndex(r => r.staffId === staffId);
+                        const updatedResponses = [...topic.responses];
+
+                        if (existingResponseIndex > -1) {
+                            if (responseText.trim()) {
+                                // Update
+                                updatedResponses[existingResponseIndex] = { ...updatedResponses[existingResponseIndex], response: responseText.trim() };
+                            } else {
+                                // Delete if empty
+                                updatedResponses.splice(existingResponseIndex, 1);
+                            }
+                        } else if (responseText.trim()) {
+                            // Add new
+                            updatedResponses.push({
+                                staffId,
+                                staffName: staffMember.name,
+                                response: responseText.trim(),
+                            });
+                        }
+                        return { ...topic, responses: updatedResponses };
+                    });
+                    return { ...monthlyNA, topics: updatedTopics };
+                }
+                return monthlyNA;
+            });
+            return { ...h, needsAssessments: updatedNeedsAssessments };
+        }
+        return h;
+    }));
+};
+
   // --- Communication Handlers ---
   const handleSendMessage = (hospitalId: string, content: MessageContent, sender: 'hospital' | 'admin') => {
     const newMessage: AdminMessage = {
@@ -1263,6 +1307,8 @@ const App: React.FC = () => {
                         trainingMaterials={hospital.trainingMaterials || []}
                         accreditationMaterials={hospital.accreditationMaterials || []}
                         newsBanners={hospital.newsBanners || []}
+                        needsAssessments={hospital.needsAssessments || []}
+                        onSubmitNeedsAssessmentResponse={handleSubmitNeedsAssessmentResponse}
                         userRole={loggedInUser.role}
                    />
         }
@@ -1287,6 +1333,8 @@ const App: React.FC = () => {
                         trainingMaterials={hospital.trainingMaterials || []}
                         accreditationMaterials={hospital.accreditationMaterials || []}
                         newsBanners={hospital.newsBanners || []}
+                        needsAssessments={hospital.needsAssessments || []}
+                        onSubmitNeedsAssessmentResponse={handleSubmitNeedsAssessmentResponse}
                         userRole={loggedInUser.role}
                    />
             }
@@ -1332,7 +1380,7 @@ const App: React.FC = () => {
                   return <DepartmentView department={department} onBack={handleBack} onAddStaff={handleAddStaff} onUpdateStaff={handleUpdateStaff} onDeleteStaff={handleDeleteStaff} onSelectStaff={handleSelectStaff} onComprehensiveImport={handleComprehensiveImport} onManageChecklists={() => setCurrentView(View.ChecklistManager)} onManageExams={() => setCurrentView(View.ExamManager)} onManageTraining={() => setCurrentView(View.TrainingManager)} onManagePatientEducation={() => setCurrentView(View.PatientEducationManager)} onAddOrUpdateWorkLog={handleAddOrUpdateWorkLog} userRole={loggedInUser.role} newsBanners={hospital.newsBanners || []} />;
                 case View.StaffMemberView:
                   if (!department || !staffMember) return <p>Selected staff member not found.</p>;
-                  return <StaffMemberView department={department} staffMember={staffMember} onBack={handleBack} onAddOrUpdateAssessment={handleAddOrUpdateAssessment} onUpdateAssessmentMessages={handleUpdateAssessmentMessages} onSubmitExam={handleSubmitExam} checklistTemplates={hospital.checklistTemplates || []} examTemplates={hospital.examTemplates || []} trainingMaterials={hospital.trainingMaterials || []} accreditationMaterials={hospital.accreditationMaterials || []} newsBanners={hospital.newsBanners || []} userRole={loggedInUser.role} />;
+                  return <StaffMemberView department={department} staffMember={staffMember} onBack={handleBack} onAddOrUpdateAssessment={handleAddOrUpdateAssessment} onUpdateAssessmentMessages={handleUpdateAssessmentMessages} onSubmitExam={handleSubmitExam} checklistTemplates={hospital.checklistTemplates || []} examTemplates={hospital.examTemplates || []} trainingMaterials={hospital.trainingMaterials || []} accreditationMaterials={hospital.accreditationMaterials || []} newsBanners={hospital.newsBanners || []} needsAssessments={hospital.needsAssessments || []} onSubmitNeedsAssessmentResponse={handleSubmitNeedsAssessmentResponse} userRole={loggedInUser.role} />;
                 case View.ChecklistManager:
                     return <ChecklistManager templates={hospital.checklistTemplates || []} onAddOrUpdate={handleAddOrUpdateChecklistTemplate} onDelete={handleDeleteChecklistTemplate} onBack={handleBack} />;
                 case View.ExamManager:
@@ -1401,7 +1449,7 @@ const App: React.FC = () => {
         return <DepartmentView department={department} onBack={handleBack} onAddStaff={handleAddStaff} onUpdateStaff={handleUpdateStaff} onDeleteStaff={handleDeleteStaff} onSelectStaff={handleSelectStaff} onComprehensiveImport={handleComprehensiveImport} onManageChecklists={() => setCurrentView(View.ChecklistManager)} onManageExams={() => setCurrentView(View.ExamManager)} onManageTraining={() => setCurrentView(View.TrainingManager)} onManagePatientEducation={() => setCurrentView(View.PatientEducationManager)} onAddOrUpdateWorkLog={handleAddOrUpdateWorkLog} userRole={loggedInUser?.role ?? UserRole.Admin} newsBanners={hospital.newsBanners || []} />;
       case View.StaffMemberView:
         if (!department || !staffMember) return <p>Selected staff member not found.</p>;
-        return <StaffMemberView department={department} staffMember={staffMember} onBack={handleBack} onAddOrUpdateAssessment={handleAddOrUpdateAssessment} onUpdateAssessmentMessages={handleUpdateAssessmentMessages} onSubmitExam={handleSubmitExam} checklistTemplates={hospital.checklistTemplates || []} examTemplates={hospital.examTemplates || []} trainingMaterials={hospital.trainingMaterials || []} accreditationMaterials={hospital.accreditationMaterials || []} newsBanners={hospital.newsBanners || []} userRole={loggedInUser?.role ?? UserRole.Admin} />;
+        return <StaffMemberView department={department} staffMember={staffMember} onBack={handleBack} onAddOrUpdateAssessment={handleAddOrUpdateAssessment} onUpdateAssessmentMessages={handleUpdateAssessmentMessages} onSubmitExam={handleSubmitExam} checklistTemplates={hospital.checklistTemplates || []} examTemplates={hospital.examTemplates || []} trainingMaterials={hospital.trainingMaterials || []} accreditationMaterials={hospital.accreditationMaterials || []} newsBanners={hospital.newsBanners || []} needsAssessments={hospital.needsAssessments || []} onSubmitNeedsAssessmentResponse={handleSubmitNeedsAssessmentResponse} userRole={loggedInUser?.role ?? UserRole.Admin} />;
       case View.ChecklistManager:
         return <ChecklistManager templates={hospital.checklistTemplates || []} onAddOrUpdate={handleAddOrUpdateChecklistTemplate} onDelete={handleDeleteChecklistTemplate} onBack={handleBack} />;
       case View.ExamManager:

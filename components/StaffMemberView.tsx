@@ -1,7 +1,8 @@
 
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Department, StaffMember, SkillCategory, Assessment, NamedChecklistTemplate, ExamTemplate, Question, QuestionType, ExamSubmission, ExamAnswer, UserRole, MonthlyTraining, TrainingMaterial, NewsBanner } from '../types';
+import { Department, StaffMember, SkillCategory, Assessment, NamedChecklistTemplate, ExamTemplate, Question, QuestionType, ExamSubmission, ExamAnswer, UserRole, MonthlyTraining, TrainingMaterial, NewsBanner, MonthlyNeedsAssessment } from '../types';
 import { generateImprovementPlan } from '../services/geminiService';
 import SkillCategoryDisplay from './SkillCategoryDisplay';
 import SuggestionModal from './SuggestionModal';
@@ -21,6 +22,7 @@ import { AudioIcon } from './icons/AudioIcon';
 import { PdfIcon } from './icons/PdfIcon';
 import { ShieldCheckIcon } from './icons/ShieldCheckIcon';
 import NewsCarousel from './NewsCarousel';
+import { ClipboardDocumentListIcon } from './icons/ClipboardDocumentListIcon';
 
 interface StaffMemberViewProps {
   department: Department;
@@ -29,11 +31,13 @@ interface StaffMemberViewProps {
   onAddOrUpdateAssessment: (departmentId: string, staffId: string, month: string, skills: SkillCategory[], template?: NamedChecklistTemplate) => void;
   onUpdateAssessmentMessages: (departmentId: string, staffId: string, month: string, messages: { supervisorMessage: string; managerMessage: string; }) => void;
   onSubmitExam: (departmentId: string, staffId: string, month: string, submission: ExamSubmission) => void;
+  onSubmitNeedsAssessmentResponse: (departmentId: string, staffId: string, month: string, responses: Map<string, string>) => void;
   checklistTemplates: NamedChecklistTemplate[];
   examTemplates: ExamTemplate[];
   trainingMaterials: MonthlyTraining[];
   accreditationMaterials: TrainingMaterial[];
   newsBanners: NewsBanner[];
+  needsAssessments: MonthlyNeedsAssessment[];
   userRole: UserRole;
 }
 
@@ -47,7 +51,7 @@ const PERSIAN_MONTHS = [
 const CHART_COLORS = ['#3b82f6', '#16a34a', '#f97316', '#dc2626', '#8b5cf6', '#db2777'];
 
 type ViewMode = 'month_selection' | 'assessment_form' | 'assessment_result';
-type AssessmentResultView = 'details' | 'summary' | 'exam_list' | 'exam_taking' | 'exam_result' | 'training_materials' | 'accreditation_materials';
+type AssessmentResultView = 'details' | 'summary' | 'exam_list' | 'exam_taking' | 'exam_result' | 'training_materials' | 'accreditation_materials' | 'needs_assessment';
 
 const getIconForMimeType = (type: string): { icon: React.ReactNode, color: string } => {
     if (type.startsWith('image/')) return { icon: <ImageIcon className="w-10 h-10" />, color: 'text-blue-500' };
@@ -64,11 +68,13 @@ const StaffMemberView: React.FC<StaffMemberViewProps> = ({
   onAddOrUpdateAssessment,
   onUpdateAssessmentMessages,
   onSubmitExam,
+  onSubmitNeedsAssessmentResponse,
   checklistTemplates,
   examTemplates,
   trainingMaterials,
   accreditationMaterials,
   newsBanners,
+  needsAssessments,
   userRole,
 }) => {
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
@@ -92,6 +98,8 @@ const StaffMemberView: React.FC<StaffMemberViewProps> = ({
   // Preview State
   const [previewMaterial, setPreviewMaterial] = useState<TrainingMaterial | null>(null);
 
+  // Needs Assessment State
+  const [needsAssessmentResponses, setNeedsAssessmentResponses] = useState<Map<string, string>>(new Map());
 
   const assessmentsByMonth = useMemo(() => {
     const map = new Map<string, Assessment>();
@@ -99,6 +107,34 @@ const StaffMemberView: React.FC<StaffMemberViewProps> = ({
     return map;
   }, [staffMember.assessments]);
 
+  const needsAssessmentTopicsForMonth = useMemo(() => {
+    if (!selectedMonth) return [];
+    return needsAssessments.find(na => na.month === selectedMonth)?.topics || [];
+  }, [needsAssessments, selectedMonth]);
+
+  useEffect(() => {
+    if (assessmentSubView === 'needs_assessment' && needsAssessmentTopicsForMonth.length > 0) {
+        const initialResponses = new Map<string, string>();
+        needsAssessmentTopicsForMonth.forEach(topic => {
+            const existingResponse = topic.responses.find(r => r.staffId === staffMember.id);
+            if (existingResponse) {
+                initialResponses.set(topic.id, existingResponse.response);
+            }
+        });
+        setNeedsAssessmentResponses(initialResponses);
+    }
+  }, [assessmentSubView, needsAssessmentTopicsForMonth, staffMember.id]);
+
+  const handleNeedsAssessmentResponseChange = (topicId: string, response: string) => {
+    setNeedsAssessmentResponses(new Map(needsAssessmentResponses.set(topicId, response)));
+  };
+
+  const handleSubmitNeedsAssessmentClick = () => {
+      if (!selectedMonth) return;
+      onSubmitNeedsAssessmentResponse(department.id, staffMember.id, selectedMonth, needsAssessmentResponses);
+      alert('نظرات شما با موفقیت ثبت شد.');
+      setAssessmentSubView('summary');
+  };
 
   const handleGetComprehensiveSuggestions = () => {
     if (!selectedMonth) return;
@@ -338,6 +374,7 @@ const StaffMemberView: React.FC<StaffMemberViewProps> = ({
             case 'exam_list':
             case 'training_materials':
             case 'accreditation_materials':
+            case 'needs_assessment':
                 setAssessmentSubView('summary');
                 break;
             case 'exam_taking':
@@ -528,7 +565,7 @@ const StaffMemberView: React.FC<StaffMemberViewProps> = ({
                 </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {/* Card 1: Suggestions */}
                 <button
                     onClick={handleGetComprehensiveSuggestions}
@@ -581,6 +618,20 @@ const StaffMemberView: React.FC<StaffMemberViewProps> = ({
                         دسترسی به دستورالعمل‌ها و مستندات اعتباربخشی.
                     </p>
                 </button>
+
+                {/* Card 5: Needs Assessment */}
+                {needsAssessmentTopicsForMonth.length > 0 && (
+                <button
+                    onClick={() => setAssessmentSubView('needs_assessment')}
+                    className="group relative flex flex-col items-center justify-center text-center p-6 bg-slate-50 dark:bg-slate-700/50 rounded-lg shadow-sm hover:shadow-lg hover:bg-white dark:hover:bg-slate-700 transition-all duration-300 transform hover:-translate-y-1"
+                >
+                    <ClipboardDocumentListIcon className="w-16 h-16 mb-4 text-amber-500 transition-transform duration-300 group-hover:scale-110" />
+                    <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">نیازسنجی و نظرسنجی</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    نظر خود را در مورد موضوعات آموزشی بیان کنید.
+                    </p>
+                </button>
+                )}
             </div>
         </div>
       </div>
@@ -849,6 +900,47 @@ const StaffMemberView: React.FC<StaffMemberViewProps> = ({
     );
   };
 
+  const renderNeedsAssessmentView = () => {
+    const topics = needsAssessmentTopicsForMonth;
+    return (
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
+        <h2 className="text-2xl font-bold mb-4">نیازسنجی و نظرسنجی - <span className="text-amber-500">{selectedMonth}</span></h2>
+        <p className="text-slate-500 dark:text-slate-400 mb-6">لطفاً نظر خود را در مورد موضوعات زیر که برای آموزش در ماه جاری پیشنهاد شده‌اند، بیان کنید.</p>
+        
+        {topics.length === 0 ? (
+          <p className="text-center py-8 text-slate-400">موضوعی برای نظرسنجی در این ماه تعریف نشده است.</p>
+        ) : (
+          <div className="space-y-6">
+            {topics.map(topic => (
+              <div key={topic.id}>
+                <label htmlFor={`response-${topic.id}`} className="block text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                  {topic.title}
+                </label>
+                <textarea
+                  id={`response-${topic.id}`}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md dark:bg-slate-700 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  value={needsAssessmentResponses.get(topic.id) || ''}
+                  onChange={(e) => handleNeedsAssessmentResponseChange(topic.id, e.target.value)}
+                  placeholder="نظر، پیشنهاد یا سوال خود را اینجا بنویسید..."
+                />
+              </div>
+            ))}
+             <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-slate-700">
+                <button
+                    onClick={handleSubmitNeedsAssessmentClick}
+                    className="inline-flex items-center gap-2 px-6 py-2 font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700"
+                >
+                    <SaveIcon className="w-5 h-5" />
+                    ثبت نظرات
+                </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderAssessmentResult = () => {
     const assessment = selectedMonth ? assessmentsByMonth.get(selectedMonth) : undefined;
     
@@ -858,6 +950,9 @@ const StaffMemberView: React.FC<StaffMemberViewProps> = ({
         }
         if (assessmentSubView === 'accreditation_materials') {
             return renderAccreditationMaterials();
+        }
+        if (assessmentSubView === 'needs_assessment') {
+            return renderNeedsAssessmentView();
         }
         // For staff or anyone else without an assessment for the month,
         // show the summary page, which handles this case gracefully.
@@ -872,6 +967,7 @@ const StaffMemberView: React.FC<StaffMemberViewProps> = ({
         case 'exam_result': return renderExamResult();
         case 'training_materials': return renderTrainingMaterials();
         case 'accreditation_materials': return renderAccreditationMaterials();
+        case 'needs_assessment': return renderNeedsAssessmentView();
         case 'details':
         default:
             return renderAssessmentDetails(assessment);
