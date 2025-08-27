@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import jspdf from 'jspdf';
+import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { AiIcon } from './icons/AiIcon';
 import { DocumentIcon } from './icons/DocumentIcon';
@@ -38,7 +38,7 @@ const SuggestionModal: React.FC<SuggestionModalProps> = ({ isOpen, onClose, titl
 
         const imgData = canvas.toDataURL('image/png');
         
-        const pdf = new jspdf('p', 'pt', 'a4');
+        const pdf = new jsPDF('p', 'pt', 'a4');
         const pdfSize = {
             width: pdf.internal.pageSize.getWidth(),
             height: pdf.internal.pageSize.getHeight(),

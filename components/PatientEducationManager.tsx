@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Department, Patient, TrainingMaterial } from '../types';
 import { TrashIcon } from './icons/TrashIcon';
@@ -13,6 +14,7 @@ import { DocumentIcon } from './icons/DocumentIcon';
 import * as db from '../services/db';
 import { PaperClipIcon } from './icons/PaperClipIcon';
 import { EditIcon } from './icons/EditIcon';
+import { BackIcon } from './icons/BackIcon';
 
 interface PatientEducationManagerProps {
   department: Department;
@@ -141,9 +143,9 @@ const PatientEducationManager: React.FC<PatientEducationManagerProps> = ({ depar
 
     return (
         <>
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
                 <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">آموزش به بیمار: <span className="text-orange-500">{department.name}</span></h1>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap justify-end">
                     <button 
                         onClick={() => setIsContentModalOpen(true)}
                         className="inline-flex items-center gap-2 px-4 py-2 font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
@@ -160,9 +162,9 @@ const PatientEducationManager: React.FC<PatientEducationManagerProps> = ({ depar
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md flex h-[calc(100vh-14rem)]">
-                {/* Right Column: Patient List */}
-                <div className="w-1/3 border-l border-slate-200 dark:border-slate-700 flex flex-col">
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md flex flex-col md:flex-row h-[calc(100vh-16rem)]">
+                {/* Patient List Column */}
+                <div className={`w-full md:w-1/3 border-b md:border-b-0 md:border-l border-slate-200 dark:border-slate-700 flex flex-col ${selectedPatient ? 'hidden md:flex' : 'flex'}`}>
                     <div className="p-4 border-b border-slate-200 dark:border-slate-700">
                         <h2 className="text-xl font-bold">بیماران بخش</h2>
                     </div>
@@ -181,13 +183,15 @@ const PatientEducationManager: React.FC<PatientEducationManagerProps> = ({ depar
                     </div>
                 </div>
                 
-                {/* Left Column: Chat and Content View */}
-                <div className="w-2/3 flex flex-col">
+                {/* Chat and Content View Column */}
+                <div className={`w-full md:w-2/3 flex flex-col ${selectedPatient ? 'flex' : 'hidden md:flex'}`}>
                   {selectedPatient ? (
                     <div className="flex flex-col h-full">
-                        {/* Chat Container */}
                         <div className="flex flex-col flex-grow min-h-0">
-                            <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+                            <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
+                                <button onClick={() => setSelectedPatient(null)} className="p-2 -ml-2 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 md:hidden">
+                                    <BackIcon className="w-6 h-6"/>
+                                </button>
                                 <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">چت با {selectedPatient.name}</h3>
                             </div>
                             <div className="flex-grow overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-slate-900/50">
@@ -241,39 +245,6 @@ const PatientEducationManager: React.FC<PatientEducationManagerProps> = ({ depar
                                 >
                                 ارسال
                                 </button>
-                            </div>
-                        </div>
-
-                        {/* Educational Content Viewer */}
-                        <div className="flex-shrink-0 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
-                            <div className="p-4">
-                                <h4 className="text-lg font-bold">محتوای آموزشی در دسترس بیمار</h4>
-                            </div>
-                            <div className="px-4 pb-4 max-h-48 overflow-y-auto">
-                                {department.patientEducationMaterials && department.patientEducationMaterials.length > 0 ? (
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                        {department.patientEducationMaterials.map(material => {
-                                            const { icon, color } = getIconForMimeType(material.type);
-                                            return (
-                                                <button
-                                                    key={material.id}
-                                                    onClick={() => setPreviewMaterial(material)}
-                                                    className="group flex flex-col text-right p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg shadow-sm hover:shadow-md hover:bg-slate-200 dark:hover:bg-slate-700 transition-all text-slate-800 dark:text-slate-200"
-                                                >
-                                                    <div className={`mb-2 ${color}`}>
-                                                        {icon}
-                                                    </div>
-                                                    <h5 className="font-semibold text-xs break-all w-full truncate" title={material.name}>{material.name}</h5>
-                                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 h-8 overflow-hidden text-ellipsis">
-                                                        {material.description || 'برای مشاهده کلیک کنید'}
-                                                    </p>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                ) : (
-                                    <p className="text-center text-sm text-slate-400 py-4">هیچ محتوای آموزشی برای این بخش تعریف نشده است.</p>
-                                )}
                             </div>
                         </div>
                     </div>

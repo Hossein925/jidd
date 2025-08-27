@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Department, StaffMember, SkillCategory, Assessment, NamedChecklistTemplate, ExamTemplate, Question, QuestionType, ExamSubmission, ExamAnswer, UserRole, MonthlyTraining, TrainingMaterial, NewsBanner } from '../types';
@@ -409,7 +410,7 @@ const StaffMemberView: React.FC<StaffMemberViewProps> = ({
     return (
       <div>
         <div className="flex justify-end items-start mb-6">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap justify-end">
                 {userRole !== UserRole.Staff && (
                   <button
                       onClick={handleEditAssessment}

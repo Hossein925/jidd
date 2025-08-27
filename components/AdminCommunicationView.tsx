@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Hospital, TrainingMaterial } from '../types';
 import { BackIcon } from './icons/BackIcon';
@@ -40,6 +41,17 @@ const AdminCommunicationView: React.FC<AdminCommunicationViewProps> = ({ hospita
   useEffect(() => {
     scrollToBottom();
   }, [selectedHospitalId, selectedHospital?.adminMessages]);
+  
+  // Reset selection if hospitals list changes and selected one is gone
+  useEffect(() => {
+    if (selectedHospitalId && !hospitals.find(h => h.id === selectedHospitalId)) {
+        setSelectedHospitalId(hospitals[0]?.id || null);
+    } else if (!selectedHospitalId && hospitals.length > 0) {
+        // Auto-select the first hospital on initial load if none is selected
+        setSelectedHospitalId(hospitals[0].id);
+    }
+  }, [hospitals, selectedHospitalId]);
+
 
   const handleSendReply = (hospitalId: string) => {
     const text = replyTexts[hospitalId];
@@ -91,9 +103,9 @@ const AdminCommunicationView: React.FC<AdminCommunicationViewProps> = ({ hospita
 
   return (
     <>
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md flex h-[calc(100vh-12rem)]">
-        {/* Left Column: Hospital List */}
-        <div className="w-1/3 border-l border-slate-200 dark:border-slate-700 flex flex-col">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md flex flex-col md:flex-row h-[calc(100vh-12rem)]">
+        {/* Hospital List Column */}
+        <div className={`w-full md:w-1/3 border-b md:border-b-0 md:border-l border-slate-200 dark:border-slate-700 flex flex-col ${selectedHospitalId ? 'hidden md:flex' : 'flex'}`}>
             <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
                 <h2 className="text-xl font-bold">بیمارستان‌ها</h2>
                 <button
@@ -118,12 +130,15 @@ const AdminCommunicationView: React.FC<AdminCommunicationViewProps> = ({ hospita
             </div>
         </div>
         
-        {/* Right Column: Chat View */}
-        <div className="w-2/3 flex flex-col">
+        {/* Chat View Column */}
+        <div className={`w-full md:w-2/3 flex flex-col ${selectedHospitalId ? 'flex' : 'hidden md:flex'}`}>
           {selectedHospital ? (
             <>
-              <div className="p-4 border-b border-slate-200 dark:border-slate-700">
-                  <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">{selectedHospital.name}</h3>
+              <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
+                 <button onClick={() => setSelectedHospitalId(null)} className="p-2 -ml-2 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 md:hidden">
+                    <BackIcon className="w-6 h-6"/>
+                </button>
+                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">{selectedHospital.name}</h3>
               </div>
               <div className="flex-grow overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-slate-900/50">
                 {(selectedHospital.adminMessages || []).map(msg => (

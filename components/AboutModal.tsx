@@ -27,6 +27,19 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
         <div className="pt-4 text-center text-sm text-slate-500 dark:text-slate-400">
           <p>سازنده: حسین نصاری</p>
         </div>
+        <div className="pt-6 mt-6 border-t border-slate-200 dark:border-slate-700 text-center">
+            <h4 className="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2">سخن پایانی</h4>
+            <p className="italic">
+                این برنامه برای استفاده عموم و کاملا رایگان طراحی شده امیدوارم در ارتقای دانش پرسنل و آموزش به بیمار مفید واقع گردد.
+                <br />
+                هزینه استفاده از برنامه ختم ده صلوات می باشد.
+            </p>
+            <p className="mt-4 text-slate-500 dark:text-slate-400" style={{ fontFamily: "'Scheherazade New', serif", fontSize: '1.2rem' }}>
+                ستایش خداوندِ بخشنده را
+                <br />
+                که موجود کرد از عدم بنده را
+            </p>
+        </div>
       </div>
     </Modal>
   );

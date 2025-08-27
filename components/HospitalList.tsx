@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Hospital, UserRole } from '../types';
 import Modal from './Modal';
@@ -98,7 +99,7 @@ const HospitalList: React.FC<HospitalListProps> = ({
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <div className="flex items-center gap-4">
             <button
                 onClick={onGoToWelcome}
@@ -110,7 +111,7 @@ const HospitalList: React.FC<HospitalListProps> = ({
             </button>
             <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">انتخاب بیمارستان</h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
             {userRole === UserRole.Admin && (
               <button
                 onClick={onContactAdmin}
